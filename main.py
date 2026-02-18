@@ -17,6 +17,13 @@ from services.fda_service import get_drug_info
 from services.pubmed_service import search_pubmed
 from services.who_service import get_who_stats
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+# ... imports ...
+
+
 app = FastAPI(
     title="My Doctor — Medical AI Assistant",
     description=(
@@ -25,6 +32,8 @@ app = FastAPI(
         "⚠️ Not a substitute for professional medical advice."
     ),
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
     contact={"name": "My Doctor API Support"},
     license_info={"name": "MIT"},
 )
@@ -37,11 +46,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount the frontend directory to serve static assets (css, js, images, etc.)
+# checks if directory exists to avoid errors
+if os.path.exists("frontend"):
+    app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
 
 # ─── Health Check ────────────────────────────────────────────────────────────
 
-@app.get("/", tags=["Health"])
-async def root():
+@app.get("/", tags=["Frontend"])
+async def read_root():
+    """Serve the frontend application."""
+    if os.path.exists("frontend/index.html"):
+        return FileResponse("frontend/index.html")
+    return {"message": "Frontend not found. Please ensure 'frontend/index.html' exists."}
+
+
+@app.get("/api/info", tags=["Health"])
+async def api_info():
     return {
         "service": "My Doctor — Medical AI Assistant",
         "status": "online",
